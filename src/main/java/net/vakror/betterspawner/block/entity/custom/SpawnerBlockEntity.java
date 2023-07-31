@@ -131,6 +131,14 @@ public class SpawnerBlockEntity extends BlockEntity {
                 level.removeBlock(pos, false);
                 return;
             }
+            if (blockEntity.definition.isSingleUse()) {
+                if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs()) {
+                    level.removeBlock(pos, false);
+                    return;
+                } else {
+                    blockEntity.locked = true;
+                }
+            }
         }
     }
 
