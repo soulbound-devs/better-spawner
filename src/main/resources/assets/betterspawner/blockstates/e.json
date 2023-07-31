@@ -1,0 +1,69 @@
+{
+  ForgeData: {
+    definition: {
+      amount: 10,
+      distance: 10,
+      destroyAfterHittingMaxMobs: 1,
+      infinite: 0,
+      spawnerName: "Zombifier",
+      maxMobs: 30,
+      entityModifiers: {
+        "minecraft:zombie": {
+          modifiers: {
+            "generic.luck": {
+              name: "luck_mod",
+              amount: 2.0,
+              operation: "multiply_base"
+            },
+            "generic.attack_damage": {
+              name: "damage_mod",
+              amount: 6.0,
+              operation: "addition"
+            }
+          },
+          chance: 0.5
+        },
+        "minecraft:pig": {
+          modifiers: {
+            "generic.luck": {
+              name: "luck_mod",
+              amount: 0.2,
+              operation: "multiply_base"
+            },
+            "generic.attack_damage": {
+              name: "damage_mod",
+              amount: -2.0,
+              operation: "addition"
+            }
+          },
+          chance: 0.2
+        }
+      },
+      maxMobsOfType: {
+        "minecraft:zombie": 5,
+        "minecraft:pig": 5
+      },
+      tickDelay: 10,
+      mobTypes: [
+        "minecraft:zombie"
+      ]
+    }
+  },
+  MaxNearbyEntities: 6,
+  RequiredPlayerRange: 16,
+  SpawnCount: 4,
+  SpawnData: {
+    entity: {
+      id: "minecraft:pig"
+    }
+  },
+  MaxSpawnDelay: 800,
+  Delay: 20,
+  x: -157,
+  y: 72,
+  z: 47,
+  id: "minecraft:mob_spawner",
+  SpawnRange: 4,
+  MinSpawnDelay: 200,
+  SpawnPotentials: []
+}

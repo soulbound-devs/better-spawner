@@ -1,0 +1,18 @@
+package net.vakror.betterspawner.event;
+
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.vakror.betterspawner.BetterSpawnerMod;
+import net.vakror.betterspawner.packet.ModPackets;
+import net.vakror.betterspawner.packet.RequestAllDataC2SPacket;
+
+public class Events {
+    @Mod.EventBusSubscriber(modid = BetterSpawnerMod.MOD_ID)
+    public static class ForgeEvents {
+        @SubscribeEvent
+        public static void onPlayerLogIn(ClientPlayerNetworkEvent.LoggingIn event) {
+            ModPackets.sendToServer(new RequestAllDataC2SPacket());
+        }
+    }
+}
