@@ -29,9 +29,11 @@ public class BetterSpawnerMod
 {
     public static final String MOD_ID = "betterspawner";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static BetterSpawnerMod instance;
 
-    public BetterSpawnerMod()
-    {
+    public boolean enabled = false;
+    public BetterSpawnerMod() {
+        instance = this;
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register the commonSetup method for modloading

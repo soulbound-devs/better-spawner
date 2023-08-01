@@ -77,7 +77,7 @@ public class SpawnerBlockEntity extends BlockEntity {
     }
 
     private static void finiteEntityTick(Level level, BlockPos pos, SpawnerBlockEntity blockEntity) {
-        if (!blockEntity.locked) {
+        if (BetterSpawnerMod.instance.enabled && !blockEntity.locked) {
             int spawnedMobCount = 0;
             List<Entity> spawnedMobs = new ArrayList<>();
             int max = blockEntity.definition.getAmount().sample(RandomSource.create());
@@ -118,24 +118,27 @@ public class SpawnerBlockEntity extends BlockEntity {
     }
 
     private static void infiniteEntityTick(Level level, BlockPos pos, SpawnerBlockEntity blockEntity) {
-        int spawnedMobCount = 0;
-        List<Entity> spawnedMobs = new ArrayList<>();
-        int max = blockEntity.definition.getAmount().sample(RandomSource.create());
-        for (int i = 0; i < max; i++) {
-            List<String> possibleMobTypes = new ArrayList<>();
-            for (String mobType : blockEntity.definition.getMobTypes()) {
-                if (!blockEntity.spawnedMobs.containsKey(mobType)) {
-                    possibleMobTypes.add(mobType);
-                } else if (blockEntity.definition.getMaxForEachMobType().get(mobType) != null && blockEntity.spawnedMobs.get(mobType) <= (blockEntity.definition.getMaxForEachMobType().get(mobType) <= 0 ? Integer.MAX_VALUE: blockEntity.definition.getMaxForEachMobType().get(mobType))) {
-                    possibleMobTypes.add(mobType);
-                } if (blockEntity.definition.getMaxForEachMobType().get(mobType) == null) {
-                    possibleMobTypes.add(mobType);
+        if (BetterSpawnerMod.instance.enabled) {
+            int spawnedMobCount = 0;
+            List<Entity> spawnedMobs = new ArrayList<>();
+            int max = blockEntity.definition.getAmount().sample(RandomSource.create());
+            for (int i = 0; i < max; i++) {
+                List<String> possibleMobTypes = new ArrayList<>();
+                for (String mobType : blockEntity.definition.getMobTypes()) {
+                    if (!blockEntity.spawnedMobs.containsKey(mobType)) {
+                        possibleMobTypes.add(mobType);
+                    } else if (blockEntity.definition.getMaxForEachMobType().get(mobType) != null && blockEntity.spawnedMobs.get(mobType) <= (blockEntity.definition.getMaxForEachMobType().get(mobType) <= 0 ? Integer.MAX_VALUE : blockEntity.definition.getMaxForEachMobType().get(mobType))) {
+                        possibleMobTypes.add(mobType);
+                    }
+                    if (blockEntity.definition.getMaxForEachMobType().get(mobType) == null) {
+                        possibleMobTypes.add(mobType);
+                    }
                 }
+                spawn(possibleMobTypes, blockEntity, level, spawnedMobs, pos);
+                spawnedMobCount++;
             }
-            spawn(possibleMobTypes, blockEntity, level, spawnedMobs, pos);
-            spawnedMobCount++;
+            MinecraftForge.EVENT_BUS.post(new SpawnBatchEvent(spawnedMobCount, spawnedMobs, level));
         }
-        MinecraftForge.EVENT_BUS.post(new SpawnBatchEvent(spawnedMobCount, spawnedMobs, level));
     }
 
     public static void spawn(List<String> possibleMobTypes, SpawnerBlockEntity blockEntity, Level level, List<Entity> spawnedMobs, BlockPos pos) {
