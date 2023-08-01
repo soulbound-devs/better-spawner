@@ -13,7 +13,7 @@ public class BetterSpawnerCommands {
         public ReloadSpawnerDefinitionsCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
             dispatcher.register(Commands.literal("betterspawner")
                     .then(Commands.literal("reload-config")
-                            .requires(commandSourceStack -> commandSourceStack.hasPermission(0))
+                            .requires(commandSourceStack -> commandSourceStack.hasPermission(3))
                             .executes(this::execute)));
         }
 
