@@ -4,14 +4,13 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.server.level.ServerPlayer;
 import net.vakror.betterspawner.config.ModConfigs;
 import net.vakror.betterspawner.packet.ModPackets;
 import net.vakror.betterspawner.packet.SyncAllDataS2CPacket;
 
-public class ModLockingCommands {
-    public static class ReloadModLocksCommand {
-        public ReloadModLocksCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
+public class BetterSpawnerCommands {
+    public static class ReloadSpawnerDefinitionsCommand {
+        public ReloadSpawnerDefinitionsCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
             dispatcher.register(Commands.literal("betterspawner")
                     .then(Commands.literal("reload-config")
                             .requires(commandSourceStack -> commandSourceStack.hasPermission(0))
