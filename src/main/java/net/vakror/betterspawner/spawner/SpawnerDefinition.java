@@ -2,6 +2,7 @@ package net.vakror.betterspawner.spawner;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.util.valueproviders.UniformInt;
 import net.vakror.betterspawner.config.ConfigObject;
 import net.vakror.betterspawner.entity.BetterSpawnerModifier;
 
@@ -17,8 +18,8 @@ public class SpawnerDefinition implements ConfigObject {
             Codec.STRING.listOf().fieldOf("mobTypes").forGetter(SpawnerDefinition::getMobTypes),
             STRING_INT_MAP_CODEC.optionalFieldOf("maxMobsOfType").forGetter(SpawnerDefinition::getMaxForEachMobTypeOptional),
             STRING_MODIFIER_MAP_CODEC.optionalFieldOf("entityModifiers").forGetter(SpawnerDefinition::getEntityModifiersOptional),
-            Codec.INT.fieldOf("distance").forGetter(SpawnerDefinition::getTickDelay),
-            Codec.INT.fieldOf("amount").forGetter(SpawnerDefinition::getAmount),
+            Codec.INT.fieldOf("distance").forGetter(SpawnerDefinition::getDistance),
+            UniformInt.CODEC.fieldOf("amount").forGetter(SpawnerDefinition::getAmount),
             Codec.INT.optionalFieldOf("maxMobs").forGetter(SpawnerDefinition::getMaxMobsOptional),
             Codec.BOOL.optionalFieldOf("destroyAfterHittingMaxMobs").forGetter(SpawnerDefinition::shouldDestroyAfterHittingMaxMobsOptional),
             Codec.BOOL.optionalFieldOf("infinite").forGetter(SpawnerDefinition::isInfiniteOptional),
@@ -32,13 +33,13 @@ public class SpawnerDefinition implements ConfigObject {
     Map<String, Integer> maxForEachMobType = new HashMap<>();
     Map<String, BetterSpawnerModifier> entityModifiers = new HashMap<>();
     int distance;
-    int amount;
+    UniformInt amount;
     int maxMobs;
     boolean destroyAfterHittingMaxMobs;
     boolean infinite;
     boolean isSingleUse;
 
-    public SpawnerDefinition(String spawnerName, int tickDelay, int playerDistanceFromSpawner,List<String> mobTypes, Optional<Map<String, Integer>> maxForEachMobType, Optional<Map<String, BetterSpawnerModifier>> entityModifiers, int distance, int amount, Optional<Integer> maxMobs, Optional<Boolean> destroyAfterHittingMaxMobs, Optional<Boolean> infinite, Optional<Boolean> isSingleUse) {
+    public SpawnerDefinition(String spawnerName, int tickDelay, int playerDistanceFromSpawner, List<String> mobTypes, Optional<Map<String, Integer>> maxForEachMobType, Optional<Map<String, BetterSpawnerModifier>> entityModifiers, int distance, UniformInt amount, Optional<Integer> maxMobs, Optional<Boolean> destroyAfterHittingMaxMobs, Optional<Boolean> infinite, Optional<Boolean> isSingleUse) {
         this.spawnerName = spawnerName;
         this.tickDelay = tickDelay;
         this.playerDistanceFromSpawner = playerDistanceFromSpawner;
@@ -115,7 +116,7 @@ public class SpawnerDefinition implements ConfigObject {
         return this;
     }
 
-    public SpawnerDefinition setAmount(int amount) {
+    public SpawnerDefinition setAmount(UniformInt amount) {
         this.amount = amount;
         return this;
     }
@@ -150,7 +151,7 @@ public class SpawnerDefinition implements ConfigObject {
         return distance;
     }
 
-    public int getAmount() {
+    public UniformInt getAmount() {
         return amount;
     }
 

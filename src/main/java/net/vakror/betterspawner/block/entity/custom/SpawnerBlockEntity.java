@@ -9,13 +9,14 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.vakror.betterspawner.BetterSpawnerMod;
 import net.vakror.betterspawner.block.entity.ModBlockEntities;
+import net.vakror.betterspawner.event.SpawnBatchEvent;
 import net.vakror.betterspawner.spawner.SpawnerDefinition;
 
 import java.util.*;
@@ -76,124 +77,108 @@ public class SpawnerBlockEntity extends BlockEntity {
     }
 
     private static void finiteEntityTick(Level level, BlockPos pos, SpawnerBlockEntity blockEntity) {
-        for (int i = 0; i < blockEntity.definition.getAmount(); i++) {
-            List<String> possibleMobTypes = new ArrayList<>();
-            for (String mobType : blockEntity.definition.getMobTypes()) {
-                if (!blockEntity.locked) {
-                    if (blockEntity.totalMobs <= blockEntity.definition.getMaxMobs()) {
-                        if (!blockEntity.spawnedMobs.containsKey(mobType)) {
-                            possibleMobTypes.add(mobType);
-                        } else if (blockEntity.definition.getMaxForEachMobType().get(mobType) != null && blockEntity.spawnedMobs.get(mobType) <= blockEntity.definition.getMaxForEachMobType().get(mobType)) {
-                            possibleMobTypes.add(mobType);
+        if (!blockEntity.locked) {
+            int spawnedMobCount = 0;
+            List<Entity> spawnedMobs = new ArrayList<>();
+            int max = blockEntity.definition.getAmount().sample(RandomSource.create());
+            for (int i = 0; i < max; i++) {
+                List<String> possibleMobTypes = new ArrayList<>();
+                for (String mobType : blockEntity.definition.getMobTypes()) {
+                    if (!blockEntity.locked) {
+                        if (blockEntity.totalMobs <= blockEntity.definition.getMaxMobs()) {
+                            if (!blockEntity.spawnedMobs.containsKey(mobType)) {
+                                possibleMobTypes.add(mobType);
+                            } else if (blockEntity.definition.getMaxForEachMobType().get(mobType) != null && blockEntity.spawnedMobs.get(mobType) <= blockEntity.definition.getMaxForEachMobType().get(mobType)) {
+                                possibleMobTypes.add(mobType);
+                            } if (blockEntity.definition.getMaxForEachMobType().get(mobType) == null) {
+                                possibleMobTypes.add(mobType);
+                            }
+                        } else {
+                            blockEntity.locked = true;
                         }
+                    }
+                }
+                spawn(possibleMobTypes, blockEntity, level, spawnedMobs, pos);
+                spawnedMobCount++;
+                if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs() && blockEntity.totalMobs >= blockEntity.definition.getMaxMobs()) {
+                    level.removeBlock(pos, false);
+                    return;
+                }
+                if (blockEntity.definition.isSingleUse()) {
+                    if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs()) {
+                        level.removeBlock(pos, false);
+                        return;
                     } else {
                         blockEntity.locked = true;
                     }
                 }
             }
-            if (possibleMobTypes.size() > 0) {
-                String mobToSpawn = possibleMobTypes.get(new Random().nextInt(possibleMobTypes.size()));
-                if (ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)) == null) {
-                    BetterSpawnerMod.LOGGER.error("Entity Type: " + mobToSpawn + " not found. Skipping Spawn!");
-                } else {
-                    blockEntity.spawnedMobs.put(mobToSpawn, blockEntity.spawnedMobs.get(mobToSpawn) == null ? 1 : blockEntity.spawnedMobs.get(mobToSpawn) + 1);
-                    blockEntity.totalMobs++;
-
-                    RandomSource randomSource = RandomSource.create();
-                    double d0 = (double) pos.getX() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                    double d1 = pos.getY() + randomSource.nextInt(3) - 1;
-                    double d2 = (double) pos.getZ() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                    int attempts = 0;
-                    while (!level.noCollision(ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)).getAABB(d0, d1, d2))) {
-                        if (attempts >= 50) {
-                            break;
-                        }
-                        d0 = (double) pos.getX() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                        d1 = pos.getY() + randomSource.nextInt(3) - 1;
-                        d2 = (double) pos.getZ() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                        attempts++;
-                    }
-                    Entity entity = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)).spawn((ServerLevel) level, null, null, null, new BlockPos(d0, d1, d2), MobSpawnType.SPAWN_EGG, false, false);
-                    if (entity instanceof LivingEntity living) {
-                        blockEntity.definition.getEntityModifiers().forEach((mobType, mod) -> {
-                            if (mobToSpawn.equals(mobType) && blockEntity.apply(mod.getChance())) {
-                                mod.getModifiers().forEach((attribute, modifier) -> {
-                                    if (living.getAttribute(Objects.requireNonNull(ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(attribute)))) != null) {
-                                        Objects.requireNonNull(living.getAttribute(Objects.requireNonNull(ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(attribute))))).addTransientModifier(modifier);
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            }
-            if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs() && blockEntity.totalMobs >= blockEntity.definition.getMaxMobs()) {
-                level.removeBlock(pos, false);
-                return;
-            }
-            if (blockEntity.definition.isSingleUse()) {
-                if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs()) {
-                    level.removeBlock(pos, false);
-                    return;
-                } else {
-                    blockEntity.locked = true;
-                }
-            }
+            MinecraftForge.EVENT_BUS.post(new SpawnBatchEvent(spawnedMobCount, spawnedMobs, level));
         }
     }
 
     private static void infiniteEntityTick(Level level, BlockPos pos, SpawnerBlockEntity blockEntity) {
-        for (int i = 0; i < blockEntity.definition.getAmount(); i++) {
+        int spawnedMobCount = 0;
+        List<Entity> spawnedMobs = new ArrayList<>();
+        int max = blockEntity.definition.getAmount().sample(RandomSource.create());
+        for (int i = 0; i < max; i++) {
             List<String> possibleMobTypes = new ArrayList<>();
             for (String mobType : blockEntity.definition.getMobTypes()) {
                 if (!blockEntity.spawnedMobs.containsKey(mobType)) {
                     possibleMobTypes.add(mobType);
                 } else if (blockEntity.definition.getMaxForEachMobType().get(mobType) != null && blockEntity.spawnedMobs.get(mobType) <= (blockEntity.definition.getMaxForEachMobType().get(mobType) <= 0 ? Integer.MAX_VALUE: blockEntity.definition.getMaxForEachMobType().get(mobType))) {
                     possibleMobTypes.add(mobType);
-                } else if (blockEntity.definition.getMaxForEachMobType().get(mobType) == null) {
+                } if (blockEntity.definition.getMaxForEachMobType().get(mobType) == null) {
                     possibleMobTypes.add(mobType);
                 }
             }
-            if (possibleMobTypes.size() > 0) {
-                String mobToSpawn = possibleMobTypes.get(new Random().nextInt(possibleMobTypes.size()));
-                if (ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)) == null) {
-                    BetterSpawnerMod.LOGGER.error("Entity Type: " + mobToSpawn + " not found. Skipping Spawn!");
-                } else {
-                    blockEntity.spawnedMobs.put(mobToSpawn, blockEntity.spawnedMobs.get(mobToSpawn) == null ? 1 : blockEntity.spawnedMobs.get(mobToSpawn) + 1);
-                    blockEntity.totalMobs++;
+            spawn(possibleMobTypes, blockEntity, level, spawnedMobs, pos);
+            spawnedMobCount++;
+        }
+        MinecraftForge.EVENT_BUS.post(new SpawnBatchEvent(spawnedMobCount, spawnedMobs, level));
+    }
 
-                    RandomSource randomSource = RandomSource.create();
-                    double d0 = (double) pos.getX() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                    double d1 = pos.getY() + randomSource.nextInt(3) - 1;
-                    double d2 = (double) pos.getZ() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                    int attempts = 0;
-                    while (!level.noCollision(ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)).getAABB(d0, d1, d2))) {
-                        if (attempts >= 50) {
-                            break;
+    public static void spawn(List<String> possibleMobTypes, SpawnerBlockEntity blockEntity, Level level, List<Entity> spawnedMobs, BlockPos pos) {
+        if (possibleMobTypes.size() > 0) {
+            String mobToSpawn = possibleMobTypes.get(new Random().nextInt(possibleMobTypes.size()));
+            if (ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)) == null) {
+                BetterSpawnerMod.LOGGER.error("Entity Type: " + mobToSpawn + " not found. Skipping Spawn!");
+            } else {
+                blockEntity.spawnedMobs.put(mobToSpawn, blockEntity.spawnedMobs.get(mobToSpawn) == null ? 1 : blockEntity.spawnedMobs.get(mobToSpawn) + 1);
+                blockEntity.totalMobs++;
+
+                RandomSource randomSource = RandomSource.create();
+                double d0 = (double) pos.getX() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
+                double d1 = pos.getY() + randomSource.nextInt(3) - 1;
+                double d2 = (double) pos.getZ() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
+                int attempts = 0;
+                while (!level.noCollision(ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)).getAABB(d0, d1, d2))) {
+                    if (attempts >= 50) {
+                        break;
+                    }
+                    d0 = (double) pos.getX() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
+                    d1 = pos.getY() + randomSource.nextInt(3) - 1;
+                    d2 = (double) pos.getZ() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
+                    attempts++;
+                }
+                Entity entity = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)).spawn((ServerLevel) level, null, null, null, new BlockPos(d0, d1, d2), MobSpawnType.SPAWN_EGG, false, false);
+                spawnedMobs.add(entity);
+                if (entity instanceof LivingEntity living) {
+                    blockEntity.definition.getEntityModifiers().forEach((mobType, mod) -> {
+                        if (mobToSpawn.equals(mobType) && blockEntity.shouldApply(mod.getChance())) {
+                            mod.getModifiers().forEach((attribute, modifier) -> {
+                                if (living.getAttribute(Objects.requireNonNull(ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(attribute)))) != null) {
+                                    Objects.requireNonNull(living.getAttribute(Objects.requireNonNull(ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(attribute))))).addTransientModifier(modifier);
+                                }
+                            });
                         }
-                        d0 = (double) pos.getX() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                        d1 = pos.getY() + randomSource.nextInt(3) - 1;
-                        d2 = (double) pos.getZ() + (randomSource.nextDouble() - randomSource.nextDouble()) * (double) blockEntity.definition.getDistance() + 0.5D;
-                        attempts++;
-                    }
-                    Entity entity = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mobToSpawn)).spawn((ServerLevel) level, null, null, null, new BlockPos(d0, d1, d2), MobSpawnType.SPAWN_EGG, false, false);
-                    if (entity instanceof LivingEntity living) {
-                        blockEntity.definition.getEntityModifiers().forEach((mobType, mod) -> {
-                            if (mobToSpawn.equals(mobType) && blockEntity.apply(mod.getChance())) {
-                                mod.getModifiers().forEach((attribute, modifier) -> {
-                                    if (living.getAttribute(Objects.requireNonNull(ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(attribute)))) != null) {
-                                        Objects.requireNonNull(living.getAttribute(Objects.requireNonNull(ForgeRegistries.ATTRIBUTES.getValue(new ResourceLocation(attribute))))).addTransientModifier(modifier);
-                                    }
-                                });
-                            }
-                        });
-                    }
+                    });
                 }
             }
         }
     }
 
-    public boolean apply(float chance) {
+    public boolean shouldApply(float chance) {
         float rand = new Random().nextFloat(1.1f);
         return chance <= (float) Math.floor(rand * 10) / 10;
     }
