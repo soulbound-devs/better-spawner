@@ -20,6 +20,7 @@ import net.vakror.betterspawner.block.entity.ModBlockEntities;
 import net.vakror.betterspawner.config.ModConfigs;
 import net.vakror.betterspawner.item.ModCreativeModeTabs;
 import net.vakror.betterspawner.item.ModItems;
+import net.vakror.betterspawner.packet.ModPackets;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -46,6 +47,9 @@ public class BetterSpawnerMod
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         ModConfigs.register(false);
+        event.enqueueWork(() -> {
+            ModPackets.register();
+        });
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
