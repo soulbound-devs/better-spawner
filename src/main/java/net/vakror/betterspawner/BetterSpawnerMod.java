@@ -31,7 +31,7 @@ public class BetterSpawnerMod
     public static final Logger LOGGER = LogUtils.getLogger();
     public static BetterSpawnerMod instance;
 
-    public boolean enabled = false;
+    public boolean enabled = true;
     public BetterSpawnerMod() {
         instance = this;
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
