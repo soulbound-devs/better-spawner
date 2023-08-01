@@ -20,7 +20,8 @@ public class Events {
         @SubscribeEvent
         public static void onCommandsRegister(RegisterCommandsEvent event) {
             new BetterSpawnerCommands.ReloadSpawnerDefinitionsCommand(event.getDispatcher());
-            new BetterSpawnerCommands.SpawnerToggleCommand(event.getDispatcher());
+            new BetterSpawnerCommands.DisableSpawnerCommand(event.getDispatcher());
+            new BetterSpawnerCommands.EnableSpawnerCommand(event.getDispatcher());
         }
     }
 }
