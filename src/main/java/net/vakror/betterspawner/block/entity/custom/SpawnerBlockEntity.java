@@ -104,16 +104,15 @@ public class SpawnerBlockEntity extends BlockEntity {
                     level.removeBlock(pos, false);
                     return;
                 }
-                if (blockEntity.definition.isSingleUse()) {
-                    if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs()) {
-                        level.removeBlock(pos, false);
-                        return;
-                    } else {
-                        blockEntity.locked = true;
-                    }
-                }
             }
             MinecraftForge.EVENT_BUS.post(new SpawnBatchEvent(spawnedMobCount, spawnedMobs, level));
+            if (blockEntity.definition.isSingleUse()) {
+                if (blockEntity.definition.shouldDestroyAfterHittingMaxMobs()) {
+                    level.removeBlock(pos, false);
+                } else {
+                    blockEntity.locked = true;
+                }
+            }
         }
     }
 
