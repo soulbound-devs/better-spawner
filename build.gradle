@@ -5,7 +5,7 @@ plugins {
     id 'org.parchmentmc.librarian.forgegradle' version '1.2.0'
 }
 
-version = '1.0'
+version = '1.5'
 group = 'net.vakror.betterspawner' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'betterspawner'
 
