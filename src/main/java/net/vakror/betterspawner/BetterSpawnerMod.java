@@ -49,9 +49,7 @@ public class BetterSpawnerMod
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         ModConfigs.register(false);
-        event.enqueueWork(() -> {
-            ModPackets.register();
-        });
+        event.enqueueWork(ModPackets::register);
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
